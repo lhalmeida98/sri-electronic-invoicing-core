@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sri_einvoice
+    username: sri
+    password: sri
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+
+app:
+  offline:
+    enabled: true
+  retry:
+    max-attempts: 5
+    backoff-seconds: 30
+    scheduler-ms: 60000
