@@ -9,12 +9,18 @@ import ec.sri.einvoice.domain.model.InfoTributaria;
 import ec.sri.einvoice.domain.model.Impuesto;
 import ec.sri.einvoice.domain.model.TipoComprobante;
 import ec.sri.einvoice.domain.model.TotalImpuesto;
+import ec.sri.einvoice.infrastructure.config.AppProperties;
 import java.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SimpleXmlComprobanteGenerator implements XmlComprobanteGenerator {
   private static final DateTimeFormatter FECHA_FORMATO = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+  private final AppProperties properties;
+
+  public SimpleXmlComprobanteGenerator(AppProperties properties) {
+    this.properties = properties;
+  }
 
   @Override
   public String generar(Comprobante comprobante) {
@@ -28,7 +34,8 @@ public class SimpleXmlComprobanteGenerator implements XmlComprobanteGenerator {
 
     StringBuilder xml = new StringBuilder();
     xml.append("<?xml version='1.0' encoding='UTF-8'?>");
-    xml.append("<factura>");
+    String version = properties.getSri().getXmlVersion();
+    xml.append("<factura id=\"comprobante\" version=\"").append(escapeAttribute(version)).append("\">");
     xml.append("<infoTributaria>");
     xml.append(tag("ambiente", infoTributaria.ambiente().codigo()));
     xml.append(tag("tipoEmision", infoTributaria.tipoEmision().codigo()));
@@ -99,5 +106,9 @@ public class SimpleXmlComprobanteGenerator implements XmlComprobanteGenerator {
 
   private String escape(String value) {
     return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+  }
+
+  private String escapeAttribute(String value) {
+    return escape(value).replace("\"", "&quot;");
   }
 }

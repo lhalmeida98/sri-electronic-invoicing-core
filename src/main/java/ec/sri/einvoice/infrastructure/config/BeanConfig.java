@@ -1,6 +1,10 @@
 package ec.sri.einvoice.infrastructure.config;
 
+import ec.sri.einvoice.application.port.in.ConsultarAutorizacionLoteUseCase;
+import ec.sri.einvoice.application.port.in.ConsultarComprobanteUseCase;
+import ec.sri.einvoice.application.port.in.ConsultarFacturaComercialUseCase;
 import ec.sri.einvoice.application.port.in.EmitirComprobanteUseCase;
+import ec.sri.einvoice.application.port.in.EnviarLoteUseCase;
 import ec.sri.einvoice.application.port.in.ReintentarEnvioUseCase;
 import ec.sri.einvoice.application.port.out.AuditLogRepository;
 import ec.sri.einvoice.application.port.out.ComprobanteRepository;
@@ -9,11 +13,18 @@ import ec.sri.einvoice.application.port.out.EventStore;
 import ec.sri.einvoice.application.port.out.OfflineModePolicy;
 import ec.sri.einvoice.application.port.out.RetryPolicy;
 import ec.sri.einvoice.application.port.out.SriClient;
+import ec.sri.einvoice.application.port.out.SriConsultaClient;
+import ec.sri.einvoice.application.port.out.SriLoteClient;
 import ec.sri.einvoice.application.port.out.SriXmlValidator;
 import ec.sri.einvoice.application.port.out.TimeProvider;
 import ec.sri.einvoice.application.port.out.XmlComprobanteGenerator;
+import ec.sri.einvoice.application.service.ConsultarAutorizacionLoteService;
+import ec.sri.einvoice.application.service.ConsultarComprobanteService;
+import ec.sri.einvoice.application.service.ConsultarFacturaComercialService;
 import ec.sri.einvoice.application.service.EmitirComprobanteService;
+import ec.sri.einvoice.application.service.EnviarLoteService;
 import ec.sri.einvoice.application.service.ReintentarEnvioService;
+import ec.sri.einvoice.domain.service.AlphanumericWhitespaceRule;
 import ec.sri.einvoice.domain.service.ClaveAccesoGenerator;
 import ec.sri.einvoice.domain.service.ComprobanteStateMachine;
 import ec.sri.einvoice.domain.service.ComprobanteValidator;
@@ -30,7 +41,12 @@ import org.springframework.context.annotation.Configuration;
 public class BeanConfig {
   @Bean
   public ComprobanteValidator comprobanteValidator() {
-    return new ComprobanteValidator(List.of(new RucLengthRule(), new DetalleRule(), new TotalFacturaRule()));
+    return new ComprobanteValidator(List.of(
+        new RucLengthRule(),
+        new AlphanumericWhitespaceRule(),
+        new DetalleRule(),
+        new TotalFacturaRule()
+    ));
   }
 
   @Bean
@@ -95,5 +111,25 @@ public class BeanConfig {
         stateMachine,
         timeProvider
     );
+  }
+
+  @Bean
+  public ConsultarComprobanteUseCase consultarComprobanteUseCase(SriConsultaClient sriConsultaClient) {
+    return new ConsultarComprobanteService(sriConsultaClient);
+  }
+
+  @Bean
+  public ConsultarFacturaComercialUseCase consultarFacturaComercialUseCase(SriConsultaClient sriConsultaClient) {
+    return new ConsultarFacturaComercialService(sriConsultaClient);
+  }
+
+  @Bean
+  public EnviarLoteUseCase enviarLoteUseCase(SriLoteClient sriLoteClient) {
+    return new EnviarLoteService(sriLoteClient);
+  }
+
+  @Bean
+  public ConsultarAutorizacionLoteUseCase consultarAutorizacionLoteUseCase(SriLoteClient sriLoteClient) {
+    return new ConsultarAutorizacionLoteService(sriLoteClient);
   }
 }

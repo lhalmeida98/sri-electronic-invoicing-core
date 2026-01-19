@@ -60,13 +60,16 @@ public class ReintentarEnvioService implements ReintentarEnvioUseCase {
           if (response.status() == SriResponseStatus.AUTORIZADO) {
             comprobante.registrarAutorizacion(response.numeroAutorizacion());
             stateMachine.transition(comprobante, EstadoComprobante.AUTORIZADO, ahora, "Autorizado por SRI");
-      } else if (response.status() == SriResponseStatus.RECHAZADO) {
-        comprobante.registrarRechazo(response.mensaje());
-        stateMachine.transition(comprobante, EstadoComprobante.RECHAZADO, ahora, "Rechazado por SRI");
-      } else {
-        comprobante.incrementarIntento(ahora, retryPolicy.nextAttemptTime(comprobante.intentosEnvio(), ahora));
-        stateMachine.transition(comprobante, EstadoComprobante.ERROR, ahora, "Error de envio");
-      }
+          } else if (response.status() == SriResponseStatus.NO_AUTORIZADO) {
+            comprobante.registrarRechazo(response.mensaje());
+            stateMachine.transition(comprobante, EstadoComprobante.RECHAZADO, ahora, "Rechazado por SRI");
+          } else if (response.status() == SriResponseStatus.ENVIADO_SRI
+              || response.status() == SriResponseStatus.EN_PROCESO) {
+            // En espera de autorizacion; no re-enviar el comprobante.
+          } else {
+            comprobante.incrementarIntento(ahora, retryPolicy.nextAttemptTime(comprobante.intentosEnvio(), ahora));
+            stateMachine.transition(comprobante, EstadoComprobante.ERROR, ahora, "Error de envio");
+          }
 
       repository.save(comprobante);
       eventStore.append(comprobante.pullEvents());

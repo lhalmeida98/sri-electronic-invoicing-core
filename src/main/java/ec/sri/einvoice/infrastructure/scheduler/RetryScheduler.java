@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
         this.useCase = useCase;
       }
 
-      @Scheduled(fixedDelayString = "${app.retry.scheduler-ms:60000}")
+      /*@Scheduled(fixedDelayString = "${app.retry.scheduler-ms:60000}")
       public void ejecutar() {
         useCase.reintentarPendientes();
-      }
+      }*/
 }

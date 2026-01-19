@@ -9,6 +9,11 @@ public class RucLengthRule implements ValidationRule<Comprobante> {
     if (ruc == null || ruc.length() != 13) {
       return ValidationResult.error("RUC de emisor invalido");
     }
+    for (int i = 0; i < ruc.length(); i++) {
+      if (!Character.isDigit(ruc.charAt(i))) {
+        return ValidationResult.error("RUC de emisor invalido");
+      }
+    }
     return ValidationResult.ok();
   }
 }

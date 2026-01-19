@@ -8,6 +8,11 @@ import java.time.format.DateTimeFormatter;
 
 public class ClaveAccesoGenerator {
   private static final DateTimeFormatter FECHA_FORMATO = DateTimeFormatter.ofPattern("ddMMyyyy");
+  private static final int RUC_LENGTH = 13;
+  private static final int ESTAB_LENGTH = 3;
+  private static final int PUNTO_EMISION_LENGTH = 3;
+  private static final int SECUENCIAL_LENGTH = 9;
+  private static final int CODIGO_NUMERICO_LENGTH = 8;
 
   public ClaveAcceso generar(
       InfoTributaria infoTributaria,
@@ -17,11 +22,12 @@ public class ClaveAccesoGenerator {
   ) {
     String fecha = fechaEmision.format(FECHA_FORMATO);
     String codigoDoc = tipoComprobante.codigo();
-    String ruc = infoTributaria.ruc();
+    String ruc = requireExactDigits(infoTributaria.ruc(), RUC_LENGTH, "ruc");
     String ambiente = infoTributaria.ambiente().codigo();
-    String serie = padLeft(infoTributaria.estab(), 3) + padLeft(infoTributaria.ptoEmi(), 3);
-    String secuencial = padLeft(infoTributaria.secuencial(), 9);
-    String codigo = padLeft(codigoNumerico, 8);
+    String serie = padLeftNumeric(infoTributaria.estab(), ESTAB_LENGTH, "estab")
+        + padLeftNumeric(infoTributaria.ptoEmi(), PUNTO_EMISION_LENGTH, "ptoEmi");
+    String secuencial = padLeftNumeric(infoTributaria.secuencial(), SECUENCIAL_LENGTH, "secuencial");
+    String codigo = padLeftNumeric(codigoNumerico, CODIGO_NUMERICO_LENGTH, "codigoNumerico");
     String tipoEmision = infoTributaria.tipoEmision().codigo();
 
     String base = fecha + codigoDoc + ruc + ambiente + serie + secuencial + codigo + tipoEmision;
@@ -29,14 +35,36 @@ public class ClaveAccesoGenerator {
     return ClaveAcceso.of(base + digitoVerificador);
   }
 
-  private String padLeft(String value, int length) {
+  private String padLeftNumeric(String value, int length, String fieldName) {
+    String normalized = requireDigits(value, fieldName);
+    if (normalized.length() > length) {
+      throw new IllegalArgumentException("Campo " + fieldName + " supera longitud " + length);
+    }
+    return String.format("%" + length + "s", normalized).replace(' ', '0');
+  }
+
+  private String requireExactDigits(String value, int length, String fieldName) {
+    String normalized = requireDigits(value, fieldName);
+    if (normalized.length() != length) {
+      throw new IllegalArgumentException("Campo " + fieldName + " debe tener " + length + " digitos");
+    }
+    return normalized;
+  }
+
+  private String requireDigits(String value, String fieldName) {
     if (value == null) {
-      throw new IllegalArgumentException("Valor requerido para clave de acceso");
+      throw new IllegalArgumentException("Campo " + fieldName + " es requerido");
     }
-    if (value.length() > length) {
-      return value.substring(value.length() - length);
+    String trimmed = value.trim();
+    if (trimmed.isEmpty()) {
+      throw new IllegalArgumentException("Campo " + fieldName + " es requerido");
     }
-    return String.format("%" + length + "s", value).replace(' ', '0');
+    for (int i = 0; i < trimmed.length(); i++) {
+      if (!Character.isDigit(trimmed.charAt(i))) {
+        throw new IllegalArgumentException("Campo " + fieldName + " debe ser numerico");
+      }
+    }
+    return trimmed;
   }
 
   private int modulo11(String value) {

@@ -91,42 +91,58 @@ public class EmitirComprobanteService implements EmitirComprobanteUseCase {
             : ahora.atZone(java.time.ZoneId.systemDefault()).toLocalDate()
     );
     comprobante.asignarClaveAcceso(claveAcceso);
+    RuntimeException error = null;
+    try {
+      validator.validateOrThrow(comprobante);
+      stateMachine.transition(comprobante, EstadoComprobante.VALIDADO, ahora, "Validacion exitosa");
 
-    validator.validateOrThrow(comprobante);
-    stateMachine.transition(comprobante, EstadoComprobante.VALIDADO, ahora, "Validacion exitosa");
+      String xml = xmlGenerator.generar(comprobante);
+      xmlValidator.validar(comprobante.tipo(), xml);
+      comprobante.registrarXml(xml);
 
-    String xml = xmlGenerator.generar(comprobante);
-    xmlValidator.validar(comprobante.tipo(), xml);
-    comprobante.registrarXml(xml);
+      String xmlFirmado = signatureService.firmar(xml, comprobante.infoTributaria());
+      comprobante.registrarXmlFirmado(xmlFirmado);
+      stateMachine.transition(comprobante, EstadoComprobante.FIRMADO, ahora, "Firmado");
 
-    String xmlFirmado = signatureService.firmar(xml);
-    comprobante.registrarXmlFirmado(xmlFirmado);
-    stateMachine.transition(comprobante, EstadoComprobante.FIRMADO, ahora, "Firmado");
-
-    if (offlineModePolicy.isOfflineEnabled()) {
-      comprobante.programarSiguienteReintento(retryPolicy.nextAttemptTime(0, ahora));
-      stateMachine.transition(comprobante, EstadoComprobante.EN_COLA, ahora, "En cola offline");
-    } else {
-      procesarEnvio(comprobante, ahora);
+      if (offlineModePolicy.isOfflineEnabled()) {
+        comprobante.programarSiguienteReintento(retryPolicy.nextAttemptTime(0, ahora));
+        stateMachine.transition(comprobante, EstadoComprobante.EN_COLA, ahora, "En cola offline");
+      } else {
+        procesarEnvio(comprobante, ahora);
+      }
+    } catch (RuntimeException ex) {
+      error = ex;
+      stateMachine.transition(comprobante, EstadoComprobante.ERROR, ahora, "Error al emitir: " + ex.getMessage());
+    } finally {
+      repository.save(comprobante);
+      eventStore.append(comprobante.pullEvents());
+      String accion = (error == null) ? "EMITIR" : "EMITIR_ERROR";
+      String detalle = (error == null)
+          ? "Comprobante creado"
+          : "Error al emitir: " + (error.getMessage() == null ? "sin detalle" : error.getMessage());
+      auditLogRepository.save(new BitacoraEntry(UUID.randomUUID(), comprobante.id(), accion, detalle, ahora));
     }
 
-    repository.save(comprobante);
-    eventStore.append(comprobante.pullEvents());
-    auditLogRepository.save(new BitacoraEntry(UUID.randomUUID(), comprobante.id(), "EMITIR", "Comprobante creado", ahora));
+    if (error != null) {
+      throw error;
+    }
     return comprobante.id();
   }
 
       private void procesarEnvio(Comprobante comprobante, Instant ahora) {
         stateMachine.transition(comprobante, EstadoComprobante.ENVIADO, ahora, "Enviado a SRI");
         SriResponse response = sriClient.enviar(comprobante, comprobante.xmlFirmado());
-        if (response.status() == SriResponseStatus.AUTORIZADO) {
-          comprobante.registrarAutorizacion(response.numeroAutorizacion());
-          stateMachine.transition(comprobante, EstadoComprobante.AUTORIZADO, ahora, "Autorizado por SRI");
+    if (response.status() == SriResponseStatus.AUTORIZADO) {
+      comprobante.registrarAutorizacion(response.numeroAutorizacion());
+      stateMachine.transition(comprobante, EstadoComprobante.AUTORIZADO, ahora, "Autorizado por SRI");
       return;
     }
-    if (response.status() == SriResponseStatus.RECHAZADO) {
+    if (response.status() == SriResponseStatus.NO_AUTORIZADO) {
       comprobante.registrarRechazo(response.mensaje());
       stateMachine.transition(comprobante, EstadoComprobante.RECHAZADO, ahora, "Rechazado por SRI");
+      return;
+    }
+    if (response.status() == SriResponseStatus.ENVIADO_SRI || response.status() == SriResponseStatus.EN_PROCESO) {
       return;
     }
     comprobante.incrementarIntento(ahora, retryPolicy.nextAttemptTime(comprobante.intentosEnvio(), ahora));

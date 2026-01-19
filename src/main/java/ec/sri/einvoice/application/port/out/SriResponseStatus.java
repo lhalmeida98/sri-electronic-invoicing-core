@@ -1,8 +1,10 @@
 package ec.sri.einvoice.application.port.out;
 
 public enum SriResponseStatus {
-  RECIBIDO,
+  GENERADO,
+  ENVIADO_SRI,
+  EN_PROCESO,
   AUTORIZADO,
-  RECHAZADO,
+  NO_AUTORIZADO,
   ERROR
 }

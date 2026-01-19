@@ -31,6 +31,8 @@ public final class ComprobanteTestData {
         "001",
         "002",
         "000000123",
+        null,
+        null,
         null
     );
 

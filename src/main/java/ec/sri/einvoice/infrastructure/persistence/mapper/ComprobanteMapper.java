@@ -114,7 +114,9 @@ public class ComprobanteMapper {
         infoTributaria.estab(),
         infoTributaria.ptoEmi(),
         infoTributaria.secuencial(),
-        infoTributaria.claveAcceso() != null ? infoTributaria.claveAcceso().value() : null
+        infoTributaria.claveAcceso() != null ? infoTributaria.claveAcceso().value() : null,
+        infoTributaria.firmaElectronica(),
+        infoTributaria.claveFirma()
     );
   }
 
@@ -176,7 +178,9 @@ public class ComprobanteMapper {
         payload.estab(),
         payload.ptoEmi(),
         payload.secuencial(),
-        payload.claveAcceso() != null ? ClaveAcceso.of(payload.claveAcceso()) : null
+        payload.claveAcceso() != null ? ClaveAcceso.of(payload.claveAcceso()) : null,
+        payload.firmaElectronica(),
+        payload.claveFirma()
     );
   }
 

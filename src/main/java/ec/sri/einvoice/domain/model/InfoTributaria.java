@@ -13,6 +13,8 @@ public final class InfoTributaria {
   private final String ptoEmi;
   private final String secuencial;
   private final ClaveAcceso claveAcceso;
+  private final String firmaElectronica;
+  private final String claveFirma;
 
   public InfoTributaria(
       Ambiente ambiente,
@@ -24,7 +26,9 @@ public final class InfoTributaria {
       String estab,
       String ptoEmi,
       String secuencial,
-      ClaveAcceso claveAcceso
+      ClaveAcceso claveAcceso,
+      String firmaElectronica,
+      String claveFirma
   ) {
     this.ambiente = Objects.requireNonNull(ambiente, "ambiente");
     this.tipoEmision = Objects.requireNonNull(tipoEmision, "tipoEmision");
@@ -36,6 +40,8 @@ public final class InfoTributaria {
     this.ptoEmi = Objects.requireNonNull(ptoEmi, "ptoEmi");
     this.secuencial = Objects.requireNonNull(secuencial, "secuencial");
     this.claveAcceso = claveAcceso;
+    this.firmaElectronica = firmaElectronica;
+    this.claveFirma = claveFirma;
   }
 
   public Ambiente ambiente() {
@@ -78,6 +84,14 @@ public final class InfoTributaria {
     return claveAcceso;
   }
 
+  public String firmaElectronica() {
+    return firmaElectronica;
+  }
+
+  public String claveFirma() {
+    return claveFirma;
+  }
+
   public InfoTributaria withClaveAcceso(ClaveAcceso nuevaClave) {
     return new InfoTributaria(
         ambiente,
@@ -89,7 +103,9 @@ public final class InfoTributaria {
         estab,
         ptoEmi,
         secuencial,
-        nuevaClave
+        nuevaClave,
+        firmaElectronica,
+        claveFirma
     );
   }
 }

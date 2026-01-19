@@ -4,7 +4,8 @@ public enum TipoIdentificacion {
   RUC("04"),
   CEDULA("05"),
   PASAPORTE("06"),
-  CONSUMIDOR_FINAL("07");
+  CONSUMIDOR_FINAL("07"),
+  IDENTIFICACION_EXTERIOR("08");
 
   private final String codigo;
 

@@ -20,7 +20,9 @@ public record ComprobantePayload(
       String estab,
       String ptoEmi,
       String secuencial,
-      String claveAcceso
+      String claveAcceso,
+      String firmaElectronica,
+      String claveFirma
   ) {
   }
 
