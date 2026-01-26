@@ -18,7 +18,7 @@ public class TotalFacturaRule implements ValidationRule<Comprobante> {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal esperado = infoFactura.totalSinImpuestos()
-        .subtract(infoFactura.totalDescuento())
+        //.subtract(infoFactura.totalDescuento())
         .add(totalImpuestos)
         .add(infoFactura.propina());
 
